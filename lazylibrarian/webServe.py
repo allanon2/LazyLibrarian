@@ -223,6 +223,7 @@ class WebInterface(object):
     addResults.exposed = True
 
 #BOOKS
+
     def markBooks(self, AuthorName=None, action=None, **args):
         myDB = database.DBConnection()
         for bookid in args:
