@@ -135,56 +135,58 @@ class GoogleBooks:
         return resultlist
 
 
-    def find_book(self, bookid=None):
+    def find_book(self, bookid):
         resultlist = []
 
-        URL = 'https://www.googleapis.com/books/v1/volumes/' + bookid
+        URL = 'https://www.googleapis.com/books/v1/volumes/' + str(bookid)
         jsonresults = json.JSONDecoder().decode(urllib2.urlopen(URL, timeout=30).read())
 
         try:
-            bookdate = item['volumeInfo']['publishedDate']
+            bookdate = jsonresults['volumeInfo']['publishedDate']
         except KeyError:
             bookdate = 'Unknown'
 
         try:
-            bookimg = item['volumeInfo']['imageLinks']['thumbnail']
+            bookimg = jsonresults['volumeInfo']['imageLinks']['thumbnail']
         except KeyError:
             bookimg = 'images/nocover.png'
 
         try:
-            bookrate = item['volumeInfo']['averageRating']
+            bookrate = jsonresults['volumeInfo']['averageRating']
         except KeyError:
             bookrate = 0
 
         try:
-            bookpages = item['volumeInfo']['pageCount']
+            bookpages = jsonresults['volumeInfo']['pageCount']
         except KeyError:
             bookpages = 0
 
         try:
-            bookgenre = item['volumeInfo']['categories']
+            bookgenre = jsonresults['volumeInfo']['categories']
         except KeyError:
             bookgenre = 'Unknown'
 
         try:
-            bookdesc = item['volumeInfo']['description']
+            bookdesc = jsonresults['volumeInfo']['description']
         except KeyError:
             bookdesc = 'Not available'
 
         try:
-            if item['volumeInfo']['industryIdentifiers'][0]['type'] == 'ISBN_10':
-                bookisbn = item['volumeInfo']['industryIdentifiers'][0]['identifier']
+            if jsonresults['volumeInfo']['industryIdentifiers'][0]['type'] == 'ISBN_10':
+                bookisbn = jsonresults['volumeInfo']['industryIdentifiers'][0]['identifier']
             else:
                 bookisbn = 0
         except KeyError:
             bookisbn = 0
 
         resultlist.append({
-            'bookname': item['volumeInfo']['title'],
+            'bookid': jsonresults['id'],
+            'bookname': jsonresults['volumeInfo']['title'],
+            'authorname': jsonresults['volumeInfo']['authors'][0],
             'bookisbn': bookisbn,
             'bookdate': bookdate,
-            'booklang': item['volumeInfo']['language'],
-            'booklink': item['volumeInfo']['canonicalVolumeLink'],
+            'booklang': jsonresults['volumeInfo']['language'],
+            'booklink': jsonresults['volumeInfo']['canonicalVolumeLink'],
             'bookrate': float(bookrate),
             'bookimg': bookimg,
             'bookpages': bookpages,

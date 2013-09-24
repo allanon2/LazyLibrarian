@@ -1,7 +1,6 @@
 <%inherit file="base.html" />
 <%!
-    import lazylibrarian
-    from lazylibrarian.formatter import checked
+    from lazylibrarian import database
 %>
 
 <%def name="headerIncludes()">
@@ -15,21 +14,33 @@
                 %endfor
             %endif
             <li>Action:&nbsp</li>
-            <li><a><a href="manProcess">manual processing</a></li>
+            <li><a><a href="forceSearch">force search</a></li>
+            <li>|</li>
+            <li><a><a href="manProcess">force post-processing</a></li>
         </ul>
     </div>
 </%def>
 
 <%def name="body()">
+    <p class="indented">
+        <form action="markBooks" method="get">
+            <select name="action">
+                  <option value="Have">Have</option>
+                  <option value="Downloaded">Downloaded</option>
+                  <option value="Wanted">Wanted</option>
+                  <option value="Skipped">Skipped</option>
+            </select>
+        <input type="submit" value="Go">
+    </p>
     <table class="display" id="book_table">
         <thead>
             <tr>
+                <th id="select"><input type="checkbox" onClick="toggle(this)" /></th>
                 <th id="bookart"></th>
-                <th id="authorname"></th>
+                <th id="authorname">Author</th>
                 <th id="bookname">Title</th>
                 <th id="stars">Rating</th>
                 <th id="date">Released</th>
-                <th id="language">Language</th>
                 <th id="status">Status</th>
             </tr>
         </thead>
@@ -53,6 +64,7 @@
                         starimg = '0-stars.png'
                 %>
                 <tr class="gradeZ">
+                    <td id="select"><input type="checkbox" name="${result['BookID']}" class="checkbox" /></td>
                     <td id="bookart"><a href="${result['bookimg']}" target="_new"><img src="${result['bookimg']}" height="75" width="50"></a></td>
                     <td id="authorname"><a href="authorPage?AuthorName=${result['AuthorName']}">${result['authorname']}</a></td>
                     %if result['booksub']:
@@ -63,7 +75,6 @@
                     %endif
                     <td id="stars"><img src="images/${starimg}" width="50" height="10"></td>
                     <td id="date">${result['BookDate']}</td>
-                    <td id="language">${result['booklang']}</td>
                     <td id="status">${result['Status']}</td>
                 </tr>
         %endfor

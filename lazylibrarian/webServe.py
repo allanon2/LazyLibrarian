@@ -41,15 +41,15 @@ class WebInterface(object):
         return serve_template(templatename="index.html", title="Home", authors=authors)
     home.exposed = True
 
-    def books(self, BookLang=None):
+    def books(self, BookLang=None, BookID=None):
         myDB = database.DBConnection()
 
-        languages = myDB.select('SELECT DISTINCT BookLang from books WHERE NOT STATUS="Skipped"')
+        languages = myDB.select('SELECT DISTINCT BookLang from books WHERE NOT STATUS="Skipped" AND NOT Status="Ignored"')
 
         if BookLang:
-            books = myDB.select('SELECT * from books WHERE BookLang=? AND NOT Status="Skipped"', [BookLang])
+            books = myDB.select('SELECT * from books WHERE BookLang=? AND NOT Status="Skipped" AND NOT Status="Ignored"', [BookLang])
         else:
-            books = myDB.select('SELECT * from books WHERE NOT STATUS="Skipped"')
+            books = myDB.select('SELECT * from books WHERE NOT STATUS="Skipped" AND NOT Status="Ignored"')
 
         if books is None:
             raise cherrypy.HTTPRedirect("books")
@@ -160,9 +160,9 @@ class WebInterface(object):
         languages = myDB.select('SELECT DISTINCT BookLang from books WHERE AuthorName=?', [AuthorName.replace("'","''")])
 
         if BookLang:
-            querybooks = "SELECT * from books WHERE BookLang='%s' AND AuthorName='%s' order by BookName ASC" % (BookLang, AuthorName.replace("'","''"))
+            querybooks = "SELECT * from books WHERE BookLang='%s' AND AuthorName='%s' AND NOT Status='Ignored' order by BookName ASC" % (BookLang, AuthorName.replace("'","''"))
         else:
-            querybooks = "SELECT * from books WHERE AuthorName='%s' order by BookName ASC" % AuthorName.replace("'","''")
+            querybooks = "SELECT * from books WHERE AuthorName='%s' AND NOT Status='Ignored' order by BookName ASC" % AuthorName.replace("'","''")
 
         queryauthors = "SELECT * from authors WHERE AuthorName='%s'" % AuthorName.replace("'","''")
 
@@ -173,35 +173,35 @@ class WebInterface(object):
         return serve_template(templatename="author.html", title=author['AuthorName'], author=author, books=books, languages=languages)
     authorPage.exposed = True
 
-    def pauseAuthor(self, AuthorID):
+    def pauseAuthor(self, AuthorID, AuthorName):
         logger.info(u"Pausing author: " + AuthorID)
         myDB = database.DBConnection()
         controlValueDict = {'AuthorID': AuthorID}
         newValueDict = {'Status': 'Paused'}
         myDB.upsert("authors", newValueDict, controlValueDict)
-        raise cherrypy.HTTPRedirect("authorPage?AuthorID=%s" % AuthorID)
+        raise cherrypy.HTTPRedirect("authorPage?AuthorName=%s" % AuthorName)
     pauseAuthor.exposed = True
 
-    def resumeAuthor(self, AuthorID):
+    def resumeAuthor(self, AuthorID, AuthorName):
         logger.info(u"Resuming author: " + AuthorID)
         myDB = database.DBConnection()
         controlValueDict = {'AuthorID': AuthorID}
         newValueDict = {'Status': 'Active'}
         myDB.upsert("authors", newValueDict, controlValueDict)
-        raise cherrypy.HTTPRedirect("authorPage?AuthorID=%s" % AuthorID)
+        raise cherrypy.HTTPRedirect("authorPage?AuthorName=%s" % AuthorName)
     resumeAuthor.exposed = True
 
     def deleteAuthor(self, AuthorID):
         logger.info(u"Removing author: " + AuthorID)
         myDB = database.DBConnection()
         myDB.action('DELETE from authors WHERE AuthorID=?', [AuthorID])
-        myDB.action('DELETE from books WHERE AuthorID=?', [AuthorID])
+        myDB.action('DELETE from books WHERE NOT Status="Have" AND NOT Status="Downloaded" AND NOT Status="Wanted" AND AuthorID=?', [AuthorID])
         raise cherrypy.HTTPRedirect("home")
     deleteAuthor.exposed = True
 
-    def refreshAuthor(self, AuthorID):
-        importer.addAuthorToDB(AuthorID)
-        raise cherrypy.HTTPRedirect("authorPage?AuthorID=%s" % AuthorID)
+    def refreshAuthor(self, AuthorID, AuthorName):
+        importer.addAuthorToDB(AuthorName)
+        raise cherrypy.HTTPRedirect("authorPage?AuthorName=%s" % AuthorName)
     refreshAuthor.exposed=True
 
     def addResults(self, action=None, **args):
@@ -216,7 +216,13 @@ class WebInterface(object):
                     raise cherrypy.HTTPRedirect("authorPage?AuthorName=%s" % authorname)
                 elif action == 'book':
                     threading.Thread(target=importer.addBookToDB, args=[bookid, authorname]).start()
-                    raise cherrypy.HTTPRedirect("bookPage?BookID=%s" % bookid)
+                    #raise cherrypy.HTTPRedirect("bookPage?BookID=%s" % bookid)
+                    # start searchthreads
+                    books = []
+                    if not bookid == 'book_table_length':
+                        books.append({"bookid": bookid})
+                    threading.Thread(target=searchbook, args=[books]).start()
+                    raise cherrypy.HTTPRedirect("books?BookID=%s" %bookid)
                 else:
                     logger.info('Oops, a bug')
 
@@ -233,7 +239,41 @@ class WebInterface(object):
                 controlValueDict = {'BookID': bookid}
                 newValueDict = {'Status': action}
                 myDB.upsert("books", newValueDict, controlValueDict)
-                logger.debug('Status set to %s for BookID: %s' % (action, bookid))
+                logger.info('Status set to %s for BookID: %s' % (action, bookid))
+
+                if AuthorName is not None:
+                    authorname = AuthorName
+                else:
+                    find_author = myDB.action('SELECT AuthorName FROM books WHERE BookID="%s"' % bookid).fetchone()
+                    authorname = find_author['AuthorName']
+                if action == "Ignored":
+                    lastbook = myDB.action("SELECT BookName, BookLink, BookDate from books WHERE AuthorName='%s' AND NOT Status='Ignored' order by BookDate DESC" % authorname.replace("'","''")).fetchone()
+                    totalbooknum = myDB.action("SELECT TotalBooks, HaveBooks from authors WHERE AuthorName='%s'" % authorname.replace("'","''")).fetchone()
+                    bookscount = int(totalbooknum['TotalBooks']) - 1
+                    query = 'SELECT COUNT(*) FROM books WHERE AuthorName="%s" AND Status="Have"' % authorname
+                    countbooks = myDB.action(query).fetchone()
+                    havebooks = int(countbooks[0])    
+                    controlValueDict = {"AuthorName": authorname}
+                    newValueDict = {
+                        "TotalBooks": bookscount,
+                        "HaveBooks": havebooks,
+                        "LastBook": lastbook['BookName'],
+                        "LastLink": lastbook['BookLink'],
+                        "LastDate": lastbook['BookDate']
+                        }
+                    myDB.upsert("authors", newValueDict, controlValueDict)
+                else:
+                    query = 'SELECT COUNT(*) FROM books WHERE AuthorName="%s" AND Status="Have"' % authorname
+                    countbooks = myDB.action(query).fetchone()
+                    havebooks = int(countbooks[0])
+                    check_author = 'SELECT * FROM authors WHERE AuthorName="%s"' % authorname
+                    dbauthor = myDB.action(check_author).fetchone()
+                    controlValueDict = {"AuthorName": authorname}
+                    newValueDict = {
+                        "HaveBooks": havebooks,
+                        }
+                    if dbauthor is not None:
+                        myDB.upsert("authors", newValueDict, controlValueDict)
 
         # start searchthreads
         books = []
@@ -246,10 +286,19 @@ class WebInterface(object):
         threading.Thread(target=searchbook, args=[books]).start()
         if AuthorName:
             raise cherrypy.HTTPRedirect("authorPage?AuthorName=%s" % AuthorName)
+        else:
+            raise cherrypy.HTTPRedirect("books")
     markBooks.exposed = True
+
+    def forceSearch(self):
+        threading.Thread(target=searchbook).start()
+        logger.info('Forcing NZB Search for Wanted Books')
+        raise cherrypy.HTTPRedirect("books")
+    forceSearch.exposed = True
 
     def manProcess(self):
         threading.Thread(target=postprocess.processDir).start()
+        logger.info('Forcing Post-Process of Download Directory')
         raise cherrypy.HTTPRedirect("books")
     manProcess.exposed = True
 

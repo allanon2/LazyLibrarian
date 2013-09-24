@@ -18,10 +18,12 @@
             <li><a href="deleteAuthor?AuthorID=${author['AuthorID']}"> delete </a></li>
             <li>|</li>
             %if author['Status'] == 'Paused':
-                <li><a href="resumeAuthor?AuthorID=${author['AuthorID']}"> resume </a></li>
+                <li><a href="resumeAuthor?AuthorID=${author['AuthorID']}&AuthorName=${author['AuthorName']}"> resume </a></li>
             %else:
-                <li><a href="pauseAuthor?AuthorID=${author['AuthorID']}"> pause </a></li>
+                <li><a href="pauseAuthor?AuthorID=${author['AuthorID']}&AuthorName=${author['AuthorName']}"> pause </a></li>
             %endif
+            <li>|</li>
+            <li><a href="refreshAuthor?AuthorID=${author['AuthorID']}&AuthorName=${author['AuthorName']}"> refresh </a></li>
         </ul>
     </div>
 </%def>
@@ -49,23 +51,18 @@
             <li>Totalbooks: ${author['TotalBooks']}</li>
     </div>
 
-<!--    <table class="display">-->
-<!--        <thead>-->
-<!--            <tr>-->
-<!--                <th>-->
     <p class="indented">
         <form action="markBooks" method="get"><input type="hidden" name="AuthorName" value="${author['AuthorName']}">
             <select name="action">
-                  <option value="Wanted">Wanted</option>
                   <option value="Have">Have</option>
                   <option value="Downloaded">Downloaded</option>
+                  <option value="Wanted">Wanted</option>
+                  <option value="Skipped">Skipped</option>
+                  <option value="Ignored">Ignored</option>
             </select>
         <input type="submit" value="Go">
     </p>
-<!--                </th>-->
-<!--            </tr>-->
-<!--        </thead>-->
-<!--    </table>-->
+
     <table class="display" id="book_table">
         <thead>
             <tr>
