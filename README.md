@@ -1,5 +1,8 @@
 ## LazyLibrarian
 
+#### FORK UPDATES
+I'm not attempting to "carry the torch", so to speak, as I believe there are a number of logistical issues that will keep this software from achieving total success in a manner that the community may be accustomed to. (e.g. Google Books API has very strict rate limits), so this fork attempts to work around that by simply not requiring "subscriptions" to authors; though, that is still an available option.  I hope to make this program flexible and a bit more presentable than what has been left before.
+
 #### IMPORTANT UPDATE
 As Mar2zz can no longer maintain LazyLibrarian, i have taken over.
 I don't have a lot of free time, but i will try my best to get a usable application.
