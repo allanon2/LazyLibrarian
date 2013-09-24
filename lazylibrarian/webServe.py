@@ -48,12 +48,15 @@ class WebInterface(object):
 
         if BookLang:
             books = myDB.select('SELECT * from books WHERE BookLang=? AND NOT Status="Skipped" AND NOT Status="Ignored"', [BookLang])
+        elif BookID:
+            time.sleep(2.0)
+            books = myDB.select('SELECT * from books WHERE BookID=?', [BookID])
         else:
             books = myDB.select('SELECT * from books WHERE NOT STATUS="Skipped" AND NOT Status="Ignored"')
 
         if books is None:
             raise cherrypy.HTTPRedirect("books")
-        return serve_template(templatename="books.html", title='Books', books=books, languages=languages)
+        return serve_template(templatename="books.html", title='Books', books=books, languages=languages, bookid=BookID)
     books.exposed = True
 
     def config(self):
