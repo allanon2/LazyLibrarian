@@ -6,24 +6,14 @@
         <h1>Search Results<h1>
     </div>
 
-    <p class="leftside">
-    <form action="addResults" method="get">
-            <select name="action">
-                  <option value="author">Add Author</option>
-                  <option value="book">Add Book</option>
-            </select>
-        <input type="submit" value="Go">
-    </p>
-
     <table class="display" id="book_table">
         <thead>
             <tr>
-                <th id="select"><input type="checkbox" onClick="toggle(this)" /></th>
                 <th id="bookart"></th>
                 <th id="authorname">Author</th>
                 <th id="bookname">Title</th>
-                <th id="stars"><img src="images/0-stars.png}" width="50" height="10"></td>
-                <th id="language">Lang</th>
+                <th id="stars">Rating</td>
+                <th id="language">Language</th>
              </tr>
         </thead>
 
@@ -47,15 +37,27 @@
                         starimg = '0-stars.png'
                 %>
                 <tr class="gradeZ">
-                    <td id="select"><input type="checkbox" name="${result['authorname']}&${result['bookid']}" class="checkbox" /></td>
                     <td id="bookart"><a href="${result['bookimg']}" target="_new"><img src="${result['bookimg']}" height="75" width="50"></a></td>
-                    <td id="authorname">${result['authorname']}</a></td>
+                    <td id="authorname">${result['authorname']}</a><BR>
+                    <form action="addResults" method="get">
+                        <input type="hidden" name="action" value="author">
+                        <input type="hidden" name="${result['authorname']}&${result['bookid']}" />
+                        <input type="submit" value="+Author">
+                    </form>
+                    </td>
                     %if result['booksub']:
                         <td id="bookname"><a href="${result['booklink']}" target="_new">${result['bookname']}</a><br>
-                        <i class="smalltext">${result['booksub']}</i></td>
+                        <i class="smalltext">${result['booksub']}</i>
                     %else:
-                        <td id="bookname"><a href="${result['booklink']}" target="_new">${result['bookname']}</a></td>
+                        <td id="bookname"><a href="${result['booklink']}" target="_new">${result['bookname']}</a>
                     %endif
+                    <BR>
+                    <form action="addResults" method="get">
+                        <input type="hidden" name="action" value="book">
+                        <input type="hidden" name="${result['authorname']}&${result['bookid']}" />
+                        <input type="submit" value="+Book">
+                    </form>
+                    </td>
 
                     <td id="stars"><img src="images/${starimg}" width="50" height="10"><td/>
                     <td id="language">${result['booklang']}</td>
@@ -79,7 +81,6 @@
         $('#book_table').dataTable(
             {
                 "aoColumns": [
-                    null,
                     null,
                     null,
                     null,
