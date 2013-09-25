@@ -16,12 +16,14 @@ def searchbook(books=None):
 
     if books is None:
         searchbooks = myDB.select('SELECT BookID, AuthorName, Bookname from books WHERE Status="Wanted"')
+        searchmags = myDB.select('SELECT Title, Frequency, LastAcquired from magazines WHERE Status="Active"')
     else:
         searchbooks = []
         for book in books:
             searchbook = myDB.select('SELECT BookID, AuthorName, BookName from books WHERE BookID=? AND Status="Wanted"', [book['bookid']])
             for terms in searchbook:
                 searchbooks.append(terms)
+        searchmags = []
 
     for searchbook in searchbooks:
         bookid = searchbook[0]
@@ -37,11 +39,39 @@ def searchbook(books=None):
         searchterm = re.sub('[\.\-\/]', ' ', searchterm).encode('utf-8')
         searchlist.append({"bookid": bookid, "searchterm": searchterm})
 
+    for searchmag in searchmags:
+        bookid = searchmag[0]
+        searchterm = searchmag[0]
+
+        dic = {'...':'', ' & ':' ', ' = ': ' ', '?':'', '$':'s', ' + ':' ', '"':'', ',':'', '*':''}
+
+        searchterm = formatter.latinToAscii(formatter.replace_all(searchterm, dic))
+        searchterm = re.sub('[\.\-\/]', ' ', searchterm).encode('utf-8')
+        searchlist.append({"bookid": bookid, "searchterm": searchterm})
+
+        # if searchmag[2] is None:
+        #     searchlist.append({"bookid": bookid, "searchterm": searchterm})
+        # else:
+        #     if searchmag[1] == "Weekly" and formatter.age(searchmag[2]) >=7:
+        #         searchlist.append({"bookid": bookid, "searchterm": searchterm})
+        #     if searchmag[1] == "BiWeekly" and formatter.age(searchmag[2]) >=14:
+        #         searchlist.append({"bookid": bookid, "searchterm": searchterm})
+        #     if searchmag[1] == "Monthly" and formatter.age(searchmag[2]) >=28:
+        #         searchlist.append({"bookid": bookid, "searchterm": searchterm})
+        #     if searchmag[1] == "Quarterly" and formatter.age(searchmag[2]) >=122:
+        #         searchlist.append({"bookid": bookid, "searchterm": searchterm})
+        #     if searchmag[1] == "SemiYearly" and formatter.age(searchmag[2]) >=182:
+        #         searchlist.append({"bookid": bookid, "searchterm": searchterm})
+
+
     if not lazylibrarian.SAB_HOST and not lazylibrarian.BLACKHOLE:
         logger.info('No downloadmethod is set, use SABnzbd or blackhole')
 
     if not lazylibrarian.NEWZNAB:
         logger.info('No providers are set.')
+
+    if searchlist == []:
+        logger.info('There is nothing to search for.  Mark some items as wanted or active.')
 
     for book in searchlist:
         resultlist = []
@@ -62,12 +92,14 @@ def searchbook(books=None):
                 nzbtitle = nzb['nzbtitle']
                 nzburl = nzb['nzburl']
                 nzbprov = nzb['nzbprov']
+                nzbdate_temp = nzb['nzbdate']
+                nzbdate = formatter.nzbdate2format(nzbdate_temp)
 
                 controlValueDict = {"NZBurl": nzburl}
                 newValueDict = {
                     "NZBprov": nzbprov,
                     "BookID": bookid,
-                    "NZBdate": formatter.today(),
+                    "NZBdate": nzbdate,
                     "NZBtitle": nzbtitle,
                     "Status": "Skipped"
                     }
@@ -75,7 +107,18 @@ def searchbook(books=None):
 
                 snatchedbooks = myDB.action('SELECT * from books WHERE BookID=? and Status="Snatched"', [bookid]).fetchone()
                 if not snatchedbooks:
-                    snatch = DownloadMethod(bookid, nzbprov, nzbtitle, nzburl)
+                    checkifmag = myDB.select('SELECT * from magazines WHERE Title=?', [bookid])
+                    if checkifmag:
+                        for results in checkifmag:
+                            control_date = results['LastAcquired']
+                        comp_date = formatter.datecompare(nzbdate, control_date)
+                        if comp_date > 0:
+                            myDB.upsert("magazines", {"LastAcquired": nzbdate}, {"Title": bookid})
+                            snatch = DownloadMethod(bookid, nzbprov, nzbtitle, nzburl)
+                        else:
+                            logger.info('This issue of %s is old; skipping.' % bookid)
+                    else:
+                        snatch = DownloadMethod(bookid, nzbprov, nzbtitle, nzburl)                 
                 time.sleep(1)
 
 def DownloadMethod(bookid=None, nzbprov=None, nzbtitle=None, nzburl=None):

@@ -27,46 +27,65 @@ def processDir():
                 logger.info('Found folder %s.' % pp_path)
 
                 data = myDB.select("SELECT * from books WHERE BookID='%s'" % book['BookID'])
-                for metadata in data:
-                    authorname = metadata['AuthorName']
-                    authorimg = metadata['AuthorLink']
-                    bookname = metadata['BookName']
-                    bookdesc = metadata['BookDesc']
-                    bookisbn = metadata['BookIsbn']
-                    bookrate = metadata['BookRate']
-                    bookimg = metadata['BookImg']
-                    bookpage = metadata['BookPages']
-                    booklink = metadata['BookLink']
-                    bookdate = metadata['BookDate']
-                    booklang = metadata['BookLang']
-                    bookpub = metadata['BookPub']
+                if data:
+                    for metadata in data:
+                        authorname = metadata['AuthorName']
+                        authorimg = metadata['AuthorLink']
+                        bookname = metadata['BookName']
+                        bookdesc = metadata['BookDesc']
+                        bookisbn = metadata['BookIsbn']
+                        bookrate = metadata['BookRate']
+                        bookimg = metadata['BookImg']
+                        bookpage = metadata['BookPages']
+                        booklink = metadata['BookLink']
+                        bookdate = metadata['BookDate']
+                        booklang = metadata['BookLang']
+                        bookpub = metadata['BookPub']
 
-                #Default destination path, should be allowed change per config file.
-                dest_path = authorname+'/'+bookname
+                    #Default destination path, should be allowed change per config file.
+                    dest_path = authorname+'/'+bookname
+                    global_name = bookname + ' - ' + authorname
+                else:
+                    data = myDB.select("SELECT * from magazines WHERE Title='%s'" % book['BookID'])
+                    for metadata in data:
+                        title = metadata['Title']
+                        nzbdate = metadata['LastAcquired']
+                    dest_path = '_Magazines/'+title+'/'+nzbdate
+                    authorname = None
+                    bookname = None
+                    global_name = book['NZBdate']+' - '+title
+               
                 dic = {'<':'', '>':'', '=':'', '?':'', '"':'', ',':'', '*':'', ':':'', ';':''}
                 dest_path = formatter.latinToAscii(formatter.replace_all(dest_path, dic))
-                dest_path = os.path.join(lazylibrarian.DESTINATION_DIR, dest_path).encode(lazylibrarian.SYS_ENCODING)
+                dest_path = os.path.join(lazylibrarian.DESTINATION_DIR, dest_path).encode(lazylibrarian.SYS_ENCODING)  
 
-                #Remove all extra files before sending to destination (non ePub, mobi, PDF)
-                global_name = bookname + ' - ' + authorname
+                #Remove all extra files before sending to destination (non ePub, mobi, PDF)                
                 for root, dirs, files in os.walk(pp_path):
                     for filename in files:
-                        absoluteloc = os.path.join(pp_path, filename)
-                        if not filename.endswith(('.pdf','.mobi','.epub')):
-                            os.remove(absoluteloc)
+                        source = os.path.realpath(os.path.join(root, filename))
+                        destination = os.path.join(pp_path, filename)
+                        if filename.endswith('.pdf'):
+                            shutil.move(source,destination)
+                            new_name = global_name + '.pdf'
+                            new_loc = os.path.join(pp_path,new_name)
+                            os.rename(destination, new_loc)
+                        elif filename.endswith('.mobi'):
+                            shutil.move(source,destination)
+                            new_name = global_name + '.mobi'
+                            new_loc = os.path.join(pp_path,new_name)
+                            os.rename(destination, new_loc)
+                        elif filename.endswith('.epub'):
+                            shutil.move(source,destination)
+                            new_name = global_name + '.epub'
+                            new_loc = os.path.join(pp_path,new_name)
+                            os.rename(destination, new_loc)
                         else:
-                            if filename.endswith('.pdf'):
-                                new_name = global_name + '.pdf'
-                                new_loc = os.path.join(pp_path,new_name)
-                                os.rename(absoluteloc, new_loc)
-                            elif filename.endswith('.mobi'):
-                                new_name = global_name + '.mobi'
-                                new_loc = os.path.join(pp_path,new_name)
-                                os.rename(absoluteloc, new_loc)
-                            elif filename.endswith('.epub'):
-                                new_name = global_name + '.epub'
-                                new_loc = os.path.join(pp_path,new_name)
-                                os.rename(absoluteloc, new_loc)
+                            os.remove(source)
+
+                #now that everything is moved, let's delete empty directories
+                for root, dirs, files in os.walk(pp_path, topdown=False):
+                    for directory in dirs:
+                        os.rmdir(os.path.join(root, directory))
 
 
                 processBook = processDestination(pp_path, dest_path, authorname, bookname)
@@ -75,38 +94,39 @@ def processDir():
 
                     ppcount = ppcount+1
 
-                    # try image
-                    processIMG(dest_path, bookimg, global_name)
-
-                    # try metadata
-                    processOPF(dest_path, authorname, bookname, bookisbn, book['BookID'], bookpub, bookdate, bookdesc, booklang, global_name)
-
                     #update nzbs
                     controlValueDict = {"NZBurl": book['NZBurl']}
                     newValueDict = {"Status": "Success"}
                     myDB.upsert("wanted", newValueDict, controlValueDict)
 
-                    #update books
-                    controlValueDict = {"BookID": book['BookID']}
-                    newValueDict = {"Status": "Have"}
-                    myDB.upsert("books", newValueDict, controlValueDict)
+                    # try image
+                    if bookname is not None:
+                        processIMG(dest_path, bookimg, global_name)
 
-                    #update authors
-                    query = 'SELECT COUNT(*) FROM books WHERE AuthorName="%s" AND Status="Have"' % authorname
-                    countbooks = myDB.action(query).fetchone()
-                    havebooks = int(countbooks[0])
-                    controlValueDict = {"AuthorName": authorname}
-                    newValueDict = {"HaveBooks": havebooks}
-                    author_query = 'SELECT * FROM authors WHERE AuthorName="%s"' % authorname
-                    countauthor = myDB.action(author_query).fetchone()
-                    if countauthor:
-                        myDB.upsert("authors", newValueDict, controlValueDict)
+                        # try metadata
+                        processOPF(dest_path, authorname, bookname, bookisbn, book['BookID'], bookpub, bookdate, bookdesc, booklang, global_name)
 
-                    logger.info('Successfully processed: %s - %s' % (authorname, bookname))
+                        #update books
+                        controlValueDict = {"BookID": book['BookID']}
+                        newValueDict = {"Status": "Have"}
+                        myDB.upsert("books", newValueDict, controlValueDict)
+
+                        #update authors
+                        query = 'SELECT COUNT(*) FROM books WHERE AuthorName="%s" AND Status="Have"' % authorname
+                        countbooks = myDB.action(query).fetchone()
+                        havebooks = int(countbooks[0])
+                        controlValueDict = {"AuthorName": authorname}
+                        newValueDict = {"HaveBooks": havebooks}
+                        author_query = 'SELECT * FROM authors WHERE AuthorName="%s"' % authorname
+                        countauthor = myDB.action(author_query).fetchone()
+                        if countauthor:
+                            myDB.upsert("authors", newValueDict, controlValueDict)
+
+                    logger.info('Successfully processed: %s' % global_name)
                 else:
-                    logger.info('Postprocessing for %s has failed.' % bookname)
+                    logger.info('Postprocessing for %s has failed.' % global_name)
         if ppcount:
-            logger.info('%s books are downloaded and processed.' % ppcount)
+            logger.info('%s items are downloaded and processed.' % ppcount)
 
 def processDestination(pp_path=None, dest_path=None, authorname=None, bookname=None):
 
@@ -125,6 +145,7 @@ def processDestination(pp_path=None, dest_path=None, authorname=None, bookname=N
             logger.error('Could not create destinationfolder. Check permissions of: ' + lazylibrarian.DESTINATION_DIR)
             pp = False
     else:
+        logger.error('Destination Folder %s exists.  Processing aborted.' % lazylibrarian.DESTINATION_DIR)
         pp = False
     return pp
 

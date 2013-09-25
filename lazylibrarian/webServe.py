@@ -8,7 +8,7 @@ import threading, time
 
 import lazylibrarian
 
-from lazylibrarian import logger, importer, database, postprocess
+from lazylibrarian import logger, importer, database, postprocess, formatter
 from lazylibrarian.searchnzb import searchbook
 from lazylibrarian.formatter import checked
 from lazylibrarian.gr import GoodReads
@@ -51,6 +51,10 @@ class WebInterface(object):
         elif BookID:
             time.sleep(2.0)
             books = myDB.select('SELECT * from books WHERE BookID=?', [BookID])
+            # start searchthreads
+            book_search = []
+            book_search.append({"bookid": BookID})
+            threading.Thread(target=searchbook, args=[book_search]).start()
         else:
             books = myDB.select('SELECT * from books WHERE NOT STATUS="Skipped" AND NOT Status="Ignored"')
 
@@ -58,6 +62,16 @@ class WebInterface(object):
             raise cherrypy.HTTPRedirect("books")
         return serve_template(templatename="books.html", title='Books', books=books, languages=languages, bookid=BookID)
     books.exposed = True
+
+    def magazines(self):
+        myDB = database.DBConnection()
+
+        magazines = myDB.select('SELECT * from magazines')
+
+        if magazines is None:
+            raise cherrypy.HTTPRedirect("magazines")
+        return serve_template(templatename="magazines.html", title="Magazines", magazines=magazines)
+    magazines.exposed = True
 
     def config(self):
         http_look_dir = os.path.join(lazylibrarian.PROG_DIR, 'data/interfaces/')
@@ -219,17 +233,28 @@ class WebInterface(object):
                     raise cherrypy.HTTPRedirect("authorPage?AuthorName=%s" % authorname)
                 elif action == 'book':
                     threading.Thread(target=importer.addBookToDB, args=[bookid, authorname]).start()
-                    #raise cherrypy.HTTPRedirect("bookPage?BookID=%s" % bookid)
-                    # start searchthreads
-                    books = []
-                    if not bookid == 'book_table_length':
-                        books.append({"bookid": bookid})
-                    threading.Thread(target=searchbook, args=[books]).start()
                     raise cherrypy.HTTPRedirect("books?BookID=%s" %bookid)
                 else:
                     logger.info('Oops, a bug')
 
     addResults.exposed = True
+
+    def addKeyword(self, type=None, title=None, frequency=None, **args):
+        myDB = database.DBConnection()
+        if type == 'magazine':
+            if len(title) == 0:
+                raise cherrypy.HTTPRedirect("config")
+            else:
+                controlValueDict = {"Title": title}
+                newValueDict = {
+                    "Frequency":   frequency,
+                    "Regex":   None,
+                    "Status":       "Active",
+                    "MagazineAdded":    formatter.today(),
+                    }
+                myDB.upsert("magazines", newValueDict, controlValueDict)
+                raise cherrypy.HTTPRedirect("magazines")
+    addKeyword.exposed = True
 
 #BOOKS
 
@@ -295,15 +320,15 @@ class WebInterface(object):
 
     def forceSearch(self):
         threading.Thread(target=searchbook).start()
-        logger.info('Forcing NZB Search for Wanted Books')
+        logger.info('Forcing NZB Search for Wanted Items')
         raise cherrypy.HTTPRedirect("books")
     forceSearch.exposed = True
 
-    def manProcess(self):
+    def forceProcess(self):
         threading.Thread(target=postprocess.processDir).start()
-        logger.info('Forcing Post-Process of Download Directory')
+        logger.info('Forcing Post-Process of Items in Download Directory')
         raise cherrypy.HTTPRedirect("books")
-    manProcess.exposed = True
+    forceProcess.exposed = True
 
     def logs(self):
         return serve_template(templatename="logs.html", title="Log", lineList=lazylibrarian.LOGLIST)

@@ -1,0 +1,81 @@
+<%inherit file="base.html" />
+<%!
+    from lazylibrarian import database
+%>
+
+<%def name="headerIncludes()">
+    <div id="subhead_container">
+        <ul id="subhead_menu">
+            <li>Action:&nbsp</li>
+            <li><a><a href="forceSearch">force search</a></li>
+            <li>|</li>
+            <li><a><a href="forceProcess">force post-processing</a></li>
+        </ul>
+    </div>
+</%def>
+
+<%def name="body()">
+    <p class="indented">
+        <form action="addKeyword" method="get"><input type="hidden" name="type" value="magazine">
+            <input type="text" placeholder="Title" name="title">
+            <select name="frequency">
+                  <option value="Weekly">Weekly</option>
+                  <option value="BiWeekly">BiWeekly</option>
+                  <option value="Monthly">Monthly</option>
+                  <option value="Quarterly">Quarterly</option>
+                  <option value="SemiYearly">SemiYearly</option>
+            </select>
+        <input type="submit" value="+Magazine">
+    </p>
+    <table class="display" id="book_table">
+        <thead>
+            <tr>
+                <th id="magtitle">Title</th>
+                <th id="frequency">Frequency</th>
+                <th id="lastacquired">Last Acquired</th>
+                <th id="status">Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        %for result in magazines:
+                <tr class="gradeZ">
+                    <td id="magtitle">${result['Title']}</td>
+                    <td id="frequency">${result['Frequency']}</td>
+                    <td id="lastacquired">${result['LastAcquired']}</td>
+                    <td id="status">${result['Status']}</td>
+                </tr>
+        %endfor
+        </tbody>
+    </table>
+</%def>
+
+<%def name="headIncludes()">
+    <link rel="stylesheet" href="css/data_table.css">
+</%def>
+
+<%def name="javascriptIncludes()">
+    <script src="js/libs/jquery.dataTables.min.js"></script>
+    <script>
+    $(document).ready(function()
+    {
+        $('#book_table').dataTable(
+            {
+                "aoColumns": [
+                    null,
+                    null,
+                    null,
+                    null
+                    ],
+                "oLanguage": {
+                    "sLengthMenu":"Show _MENU_ magazines per page",
+                    "sEmptyTable": "No magazines found",
+                    "sInfo":"Showing _START_ to _END_ of _TOTAL_ results",
+                    "sInfoEmpty":"Showing 0 to 0 of 0 books",
+                    "sInfoFiltered":"(filtered from _MAX_ total magazines)"},
+                "iDisplayLength": 25,
+                "sPaginationType": "full_numbers",
+            });
+    });
+    </script>
+</%def>
