@@ -111,12 +111,16 @@ def searchbook(books=None):
                     if checkifmag:
                         for results in checkifmag:
                             control_date = results['LastAcquired']
-                        comp_date = formatter.datecompare(nzbdate, control_date)
-                        if comp_date > 0:
+                        if control_date is None:
                             myDB.upsert("magazines", {"LastAcquired": nzbdate}, {"Title": bookid})
                             snatch = DownloadMethod(bookid, nzbprov, nzbtitle, nzburl)
-                        else:
-                            logger.info('This issue of %s is old; skipping.' % bookid)
+                        else:                          
+                            comp_date = formatter.datecompare(nzbdate, control_date)
+                            if comp_date > 0:
+                                myDB.upsert("magazines", {"LastAcquired": nzbdate}, {"Title": bookid})
+                                snatch = DownloadMethod(bookid, nzbprov, nzbtitle, nzburl)
+                            else:
+                                logger.info('This issue of %s is old; skipping.' % bookid)
                     else:
                         snatch = DownloadMethod(bookid, nzbprov, nzbtitle, nzburl)                 
                 time.sleep(1)
