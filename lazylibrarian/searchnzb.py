@@ -16,7 +16,7 @@ def searchbook(books=None):
 
     if books is None:
         searchbooks = myDB.select('SELECT BookID, AuthorName, Bookname from books WHERE Status="Wanted"')
-        searchmags = myDB.select('SELECT Title, Frequency, LastAcquired from magazines WHERE Status="Active"')
+        searchmags = myDB.select('SELECT Title, Frequency, LastAcquired, IssueDate from magazines WHERE Status="Active"')
     else:
         searchbooks = []
         for book in books:
@@ -42,27 +42,15 @@ def searchbook(books=None):
     for searchmag in searchmags:
         bookid = searchmag[0]
         searchterm = searchmag[0]
+        frequency = searchmag[1]
+        last_acquired = searchmag[2]
+        issue_date = searchmag[3]
 
         dic = {'...':'', ' & ':' ', ' = ': ' ', '?':'', '$':'s', ' + ':' ', '"':'', ',':'', '*':''}
 
         searchterm = formatter.latinToAscii(formatter.replace_all(searchterm, dic))
         searchterm = re.sub('[\.\-\/]', ' ', searchterm).encode('utf-8')
         searchlist.append({"bookid": bookid, "searchterm": searchterm})
-
-        # if searchmag[2] is None:
-        #     searchlist.append({"bookid": bookid, "searchterm": searchterm})
-        # else:
-        #     if searchmag[1] == "Weekly" and formatter.age(searchmag[2]) >=7:
-        #         searchlist.append({"bookid": bookid, "searchterm": searchterm})
-        #     if searchmag[1] == "BiWeekly" and formatter.age(searchmag[2]) >=14:
-        #         searchlist.append({"bookid": bookid, "searchterm": searchterm})
-        #     if searchmag[1] == "Monthly" and formatter.age(searchmag[2]) >=28:
-        #         searchlist.append({"bookid": bookid, "searchterm": searchterm})
-        #     if searchmag[1] == "Quarterly" and formatter.age(searchmag[2]) >=122:
-        #         searchlist.append({"bookid": bookid, "searchterm": searchterm})
-        #     if searchmag[1] == "SemiYearly" and formatter.age(searchmag[2]) >=182:
-        #         searchlist.append({"bookid": bookid, "searchterm": searchterm})
-
 
     if not lazylibrarian.SAB_HOST and not lazylibrarian.BLACKHOLE:
         logger.info('No downloadmethod is set, use SABnzbd or blackhole')
@@ -93,35 +81,103 @@ def searchbook(books=None):
                 nzburl = nzb['nzburl']
                 nzbprov = nzb['nzbprov']
                 nzbdate_temp = nzb['nzbdate']
+                nzbsize_temp = nzb['nzbsize']
+                nzbsize = str(round(float(nzbsize_temp) / 1048576,2))+' MB'
                 nzbdate = formatter.nzbdate2format(nzbdate_temp)
 
-                controlValueDict = {"NZBurl": nzburl}
-                newValueDict = {
-                    "NZBprov": nzbprov,
-                    "BookID": bookid,
-                    "NZBdate": nzbdate,
-                    "NZBtitle": nzbtitle,
-                    "Status": "Skipped"
-                    }
-                myDB.upsert("wanted", newValueDict, controlValueDict)
+                checkifmag = myDB.select('SELECT * from magazines WHERE Title=?', [bookid])
+                if checkifmag:
+                    for results in checkifmag:
+                        control_date = results['IssueDate']
+                        frequency = results['Frequency']
+                        regex = results['Regex']
 
-                snatchedbooks = myDB.action('SELECT * from books WHERE BookID=? and Status="Snatched"', [bookid]).fetchone()
-                if not snatchedbooks:
-                    checkifmag = myDB.select('SELECT * from magazines WHERE Title=?', [bookid])
-                    if checkifmag:
-                        for results in checkifmag:
-                            control_date = results['LastAcquired']
+                    nzbtitle_formatted = nzb['nzbtitle'].replace('.',' ')
+                    nzbtitle_exploded = nzbtitle_formatted.split(' ')
+                    #IF ANYTHING GOES WRONG IT HAS TO DO WITH NZB TITLE LENGTHS
+                    #if len(nzbtitle_exploded) > 1:
+                    #regexA = DD MonthName YYYY
+                    regexA_year = nzbtitle_exploded[len(nzbtitle_exploded)-1]
+                    regexA_month_temp = nzbtitle_exploded[len(nzbtitle_exploded)-2]
+                    regexA_month = formatter.month2num(regexA_month_temp)
+                    #regexB = YYYY-MM
+                    #regexB_last = nzbtitle_exploded[len(nzbtitle_exploded)-1]
+                    #regexB_exploded = regexB_last.split('-')
+                    #regexB_year = regexB_exploded[0]
+                    #regexB_month = regexB_exploded[1].zfill(2)
+                    #regexC = MonthName DD YYYY
+                    #regexC_year = nzbtitle_exploded[len(nzbtitle_exploded)-1]
+                    #regexC_month_temp = nzbtitle_exploded[len(nzbtitle_exploded)-3]
+                    #regexC_month = formatter.month2num(regexA_month_temp)
+
+                    if frequency == "Weekly" or frequency == "BiWeekly":
+                        regexA_day = nzbtitle_exploded[len(nzbtitle_exploded)-3].zfill(2)
+                        #regexC_day = nzbtitle_exploded[len(nzbtitle_exploded)-2].zfill(2)
+                    else:
+                        regexA_day = '01'
+                        #regexB_day = '01'
+
+                    newdatish_regexA = regexA_year+regexA_month+regexA_day
+                    #newdatish_regexB = regexB_year+regexB_month+regexB_day
+                    #newdatish_regexC = regexC_year+regexC_month+regexC_day
+
+                    try:
+                        int(newdatish_regexA)
+                    except:
+                        logger.info('NZB %s not in proper date format.' % nzbtitle_formatted)
+                        continue
+
+                    #Need to make sure that substrings of magazine titles don't get found (e.g. Maxim USA will find Maximum PC USA)
+                    keyword_check = nzbtitle_formatted.replace(bookid,'')
+                    #Don't want to overwrite status = Skipped for NZBs that have been previously found
+                    wanted_status = myDB.select('SELECT * from wanted WHERE NZBtitle=?', [nzbtitle])
+                    if wanted_status:
+                        for results in wanted_status:
+                            status = results['Status']
+                    else:
+                        status = "Skipped"
+                    if keyword_check != nzbtitle_formatted:
+                        newdatish = regexA_year+'-'+regexA_month+'-'+regexA_day
+                        controlValueDict = {"NZBurl": nzburl}
+                        newValueDict = {
+                            "NZBprov": nzbprov,
+                            "BookID": bookid,
+                            "NZBdate": nzbdate,
+                            "NZBtitle": nzbtitle,
+                            "AuxInfo": newdatish,
+                            "Status": status,
+                            "NZBsize": nzbsize
+                            }
+                        myDB.upsert("wanted", newValueDict, controlValueDict)
+                        print nzbtitle_formatted
+                        print newdatish
+
                         if control_date is None:
-                            myDB.upsert("magazines", {"LastAcquired": nzbdate}, {"Title": bookid})
+                            myDB.upsert("magazines", {"LastAcquired": nzbdate, "IssueDate": newdatish}, {"Title": bookid})
                             snatch = DownloadMethod(bookid, nzbprov, nzbtitle, nzburl)
                         else:                          
-                            comp_date = formatter.datecompare(nzbdate, control_date)
+                            comp_date = formatter.datecompare(newdatish, control_date)
                             if comp_date > 0:
-                                myDB.upsert("magazines", {"LastAcquired": nzbdate}, {"Title": bookid})
+                                myDB.upsert("magazines", {"LastAcquired": nzbdate, "IssueDate": newdatish}, {"Title": bookid})
                                 snatch = DownloadMethod(bookid, nzbprov, nzbtitle, nzburl)
                             else:
-                                logger.info('This issue of %s is old; skipping.' % bookid)
+                                logger.info('This issue of %s is old; skipping.' % nzbtitle_formatted)
                     else:
+                        logger.info('NZB %s does not completely match search term %s.' % (nzbtitle, bookid))
+                       
+                else:
+                    snatchedbooks = myDB.action('SELECT * from books WHERE BookID=? and Status="Snatched"', [bookid]).fetchone()
+                    if not snatchedbooks:
+                        controlValueDict = {"NZBurl": nzburl}
+                        newValueDict = {
+                            "NZBprov": nzbprov,
+                            "BookID": bookid,
+                            "NZBdate": nzbdate,
+                            "NZBtitle": nzbtitle,
+                            "NZBsize": nzbsize,
+                            "Status": "Skipped"
+                            }
+                        myDB.upsert("wanted", newValueDict, controlValueDict)
                         snatch = DownloadMethod(bookid, nzbprov, nzbtitle, nzburl)                 
                 time.sleep(1)
 

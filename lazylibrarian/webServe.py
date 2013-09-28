@@ -73,6 +73,16 @@ class WebInterface(object):
         return serve_template(templatename="magazines.html", title="Magazines", magazines=magazines)
     magazines.exposed = True
 
+    def wanted(self):
+        myDB = database.DBConnection()
+
+        wanted = myDB.select('SELECT * from wanted')
+
+        if wanted is None:
+            raise cherrypy.HTTPRedirect("wanted")
+        return serve_template(templatename="wanted.html", title="Wanted", wanted=wanted)
+    wanted.exposed = True
+
     def config(self):
         http_look_dir = os.path.join(lazylibrarian.PROG_DIR, 'data/interfaces/')
         http_look_list = [ name for name in os.listdir(http_look_dir) if os.path.isdir(os.path.join(http_look_dir, name)) ]
@@ -317,6 +327,52 @@ class WebInterface(object):
         else:
             raise cherrypy.HTTPRedirect("books")
     markBooks.exposed = True
+
+    def markMagazines(self, action=None, **args):
+        myDB = database.DBConnection()
+        for title in args:
+            # ouch dirty workaround...
+            if not title == 'book_table_length':
+                if action != "Delete":
+                    controlValueDict = {"Title": title}
+                    newValueDict = {
+                        "Status":       action,
+                        }
+                    myDB.upsert("magazines", newValueDict, controlValueDict)
+                    logger.info('Status of magazine %s changed to %s' % (title, action))
+                else:
+                    myDB.action('DELETE from magazines WHERE Title=?', [title])
+                    logger.info('Magazine %s removed from database' % title)
+                raise cherrypy.HTTPRedirect("magazines")
+    markMagazines.exposed = True
+
+    def markWanted(self, action=None, **args):
+        myDB = database.DBConnection()
+        #I think I need to consolidate bookid in args to unique values...
+        for nzbtitle in args:
+            if not nzbtitle == 'book_table_length':
+                if action != "Delete":
+                    controlValueDict = {"NZBtitle": nzbtitle}
+                    newValueDict = {
+                        "Status":       action,
+                        }
+                    myDB.upsert("wanted", newValueDict, controlValueDict)
+                    logger.info('Status of wanted item %s changed to %s' % (nzbtitle, action))
+                else:
+                    myDB.action('DELETE from wanted WHERE NZBtitle=?', [nzbtitle])
+                    logger.info('Item %s removed from wanted' % bookid)
+                raise cherrypy.HTTPRedirect("wanted")
+    markWanted.exposed = True
+
+    def updateRegex(self, action=None, title=None):
+        myDB = database.DBConnection()
+        controlValueDict = {"Title": title}
+        newValueDict = {
+            "Regex":       action,
+            }
+        myDB.upsert("magazines", newValueDict, controlValueDict)
+        raise cherrypy.HTTPRedirect("magazines")
+    updateRegex.exposed = True
 
     def forceSearch(self):
         threading.Thread(target=searchbook).start()

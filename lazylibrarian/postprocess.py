@@ -49,11 +49,13 @@ def processDir():
                     data = myDB.select("SELECT * from magazines WHERE Title='%s'" % book['BookID'])
                     for metadata in data:
                         title = metadata['Title']
-                        nzbdate = metadata['LastAcquired']
-                    dest_path = '_Magazines/'+title+'/'+nzbdate
+                    #AuxInfo was added for magazine release date, normally housed in 'magazines' but if multiple
+                    #files are downloading, there will be an error in post-processing, trying to go to the 
+                    #same directory.
+                    dest_path = '_Magazines/'+title+'/'+book['AuxInfo']
                     authorname = None
                     bookname = None
-                    global_name = book['NZBdate']+' - '+title
+                    global_name = book['AuxInfo']+' - '+title
                
                 dic = {'<':'', '>':'', '=':'', '?':'', '"':'', ',':'', '*':'', ':':'', ';':''}
                 dest_path = formatter.latinToAscii(formatter.replace_all(dest_path, dic))

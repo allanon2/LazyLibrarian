@@ -34,17 +34,30 @@
                 <li><a href="home">Authors</a></li>
                 <li><a href="books">Books</a></li>
                 <li><a href="magazines">Mags</a></li>
+                <li><a href="wanted">History</a></li>
                 <li><a href="logs">Logs</a></li>
                 <li><a href="config">Config</a></li>
             </ul>
             <div id="searchbar">
                 <form action="search" method="get">
-                    <input type="text" value="" onfocus="if(this.value==this.defaultValue) this.value='';" name="name" />
+                    <input type="text" placeholder="Book or Author" value="" onfocus="if(this.value==this.defaultValue) this.value='';" name="name" />
                     <select name="type">
                           <option value="author">Author</option>
                           <option value="book">Book</option>
                     </select>
-                    <input type="submit" value="Search"/>
+                    <input type="submit" value="API Search"/>
+                </form>
+                <form action="addKeyword" method="get"><input type="hidden" name="type" value="magazine">
+                    <input type="text" placeholder="Magazine Title" name="title">
+                    <select name="frequency">
+                        <option value="Weekly">Weekly</option>
+                        <option value="BiWeekly">BiWeekly</option>
+                        <option value="Monthly">Monthly</option>
+                        <option value="BiMonthly">BiMonthly</option>
+                        <option value="Quarterly">Quarterly</option>
+                        <option value="Keyword">Keyword</option>
+                    </select>
+                    <input type="submit" value="+Magazine">
                 </form>
             </div>
             <div id="subhead">

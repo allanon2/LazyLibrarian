@@ -16,47 +16,35 @@
 
 <%def name="body()">
     <p class="indented">
-        <form action="markMagazines" method="get">
+        <form action="markWanted" method="get">
             <select name="action">
-                  <option value="Active">Active</option>
-                  <option value="Paused">Paused</option>
+                  <option value="Skipped">Skipped</option>
+                  <option value="Snatched">Snatched</option>
+                  <option value="Success">Success</option>
                   <option value="Delete">Delete</option>
             </select>
         <input type="submit" value="Go">
-        </form>
     </p>
     <table class="display" id="book_table">
         <thead>
             <tr>
                 <th id="select"><input type="checkbox" onClick="toggle(this)" /></th>
-                <th id="magtitle">Title</th>
-                <th id="frequency">Frequency</th>
-                <th id="regex">Regex</th>
-                <th id="lastacquired">Last Acquired</th>
-                <th id="issuedate">Issue Date</th>
+                <th id="id">ID</th>
+                <th id="nzbtitle">NZB</th>
+                <th id="nzbdate">Date</th>
+                <th id="nzbsize">Size</th>
                 <th id="status">Status</th>
             </tr>
         </thead>
 
         <tbody>
-        %for result in magazines:
+        %for result in wanted:
                 <tr class="gradeZ">
-                    <td id="select"><input type="checkbox" name="${result['Title']}" class="checkbox" /></td>
-                    <td id="magtitle">${result['Title']}</td>
-                    <td id="frequency">${result['Frequency']}</td>
-                    <td id="regex">        
-                        <form action="updateRegex" method="get"><input type="hidden" name="title" value="${result['Title']}">
-                            <select name="action">
-                                <option selected="selected">${result['Regex']}</option>
-                                <option value="RegexA">(DD) MonthName YYYY</option>
-                                <option value="RegexB">YYYY-MM</option>
-                                <option value="RegexC">MonthName DD YYYY</option>
-                            </select>
-                            <input type="submit" value="Go">
-                        </form>
-                    </td>
-                    <td id="lastacquired">${result['LastAcquired']}</td>
-                    <td id="issuedate">${result['IssueDate']}</td>
+                    <td id="select"><input type="checkbox" name="${result['NZBtitle']}" class="checkbox" /></td>
+                    <td id="id">${result['BookID']}</td>
+                    <td id="nzbtitle">${result['NZBtitle']}</td>
+                    <td id="nzbdate">${result['NZBdate']}</td>
+                    <td id="nzbsize">${result['NZBsize']}</td>
                     <td id="status">${result['Status']}</td>
                 </tr>
         %endfor
@@ -81,15 +69,14 @@
                     null,
                     null,
                     null,
-                    null,
                     null
                     ],
                 "oLanguage": {
-                    "sLengthMenu":"Show _MENU_ magazines per page",
-                    "sEmptyTable": "No magazines found",
+                    "sLengthMenu":"Show _MENU_ items per page",
+                    "sEmptyTable": "No items found",
                     "sInfo":"Showing _START_ to _END_ of _TOTAL_ results",
                     "sInfoEmpty":"Showing 0 to 0 of 0 books",
-                    "sInfoFiltered":"(filtered from _MAX_ total magazines)"},
+                    "sInfoFiltered":"(filtered from _MAX_ total items)"},
                 "iDisplayLength": 25,
                 "sPaginationType": "full_numbers",
             });
