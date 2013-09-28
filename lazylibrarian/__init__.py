@@ -162,7 +162,7 @@ def initialize():
 
         global __INITIALIZED__, FULL_PATH, PROG_DIR, LOGLEVEL, DAEMON, DATADIR, CONFIGFILE, CFG, LOGDIR, HTTP_HOST, HTTP_PORT, HTTP_USER, HTTP_PASS, HTTP_ROOT, HTTP_LOOK, LAUNCH_BROWSER, LOGDIR, CACHEDIR, \
             IMP_ONLYISBN, IMP_PREFLANG, SAB_HOST, SAB_PORT, SAB_API, SAB_USER, SAB_PASS, DESTINATION_DIR, DESTINATION_COPY, DOWNLOAD_DIR, SAB_CAT, USENET_RETENTION, BLACKHOLE, BLACKHOLEDIR, GR_API, \
-            NZBMATRIX, NZBMATRIX_USER, NZBMATRIX_API, NEWZNAB, NEWZNAB_HOST, NEWZNAB_API, NEWZBIN, NEWZBIN_UID, NEWZBIN_PASS
+            NZBMATRIX, NZBMATRIX_USER, NZBMATRIX_API, NEWZNAB, NEWZNAB_HOST, NEWZNAB_API, NEWZBIN, NEWZBIN_UID, NEWZBIN_PASS, SEARCH_INTERVAL, SCAN_INTERVAL
 
         if __INITIALIZED__:
             return False
@@ -216,6 +216,9 @@ def initialize():
         NEWZBIN = bool(check_setting_int(CFG, 'Newzbin', 'newzbin', 0))
         NEWZBIN_UID = check_setting_str(CFG, 'Newzbin', 'newzbin_uid', '')
         NEWZBIN_PASS = check_setting_str(CFG, 'Newzbin', 'newzbin_pass', '')
+
+        SEARCH_INTERVAL = int(check_setting_str(CFG, 'SearchScan', 'search_interval', '360'))
+        SCAN_INTERVAL = int(check_setting_str(CFG, 'SearchScan', 'scan_interval', '10'))
 
         if not LOGDIR:
             LOGDIR = os.path.join(DATADIR, 'Logs')
@@ -342,6 +345,10 @@ def config_write():
     new_config['Newzbin']['newzbin_uid'] = NEWZBIN_UID
     new_config['Newzbin']['newzbin_pass'] = NEWZBIN_PASS
 
+    new_config['SearchScan'] = {}
+    new_config['SearchScan']['search_interval'] = SEARCH_INTERVAL
+    new_config['SearchScan']['scan_interval'] = SCAN_INTERVAL
+
     new_config.write()
 
 def dbcheck():
@@ -401,7 +408,7 @@ def start():
         # Crons and scheduled jobs go here
         starttime = datetime.datetime.now()
         SCHED.add_interval_job(postprocess.processDir, minutes=SCAN_INTERVAL, start_date=starttime+datetime.timedelta(minutes=1))
-        SCHED.add_interval_job(searchnzb.searchbook, minutes=SEARCH_INTERVAL, start_date=starttime+datetime.timedelta(hours=1))
+        SCHED.add_interval_job(searchnzb.searchbook, minutes=SEARCH_INTERVAL, start_date=starttime+datetime.timedelta(minutes=2))
 
         SCHED.start()
 #        for job in SCHED.get_jobs():

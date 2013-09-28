@@ -151,6 +151,21 @@
     </div>
 
     <p class="center"><input type="submit" value="Save changes"><br></p>
+
+    <div class="table_wrapper">
+        <a name="searchprocess"><h2><u>Search & Processing</u></h2></a>
+        <br>
+        <table class="configtable" summary="Search&Processing">
+            <tr>
+                <td>
+                    <h5>NZB Scan Interval:</h5><input type="text" name="search_interval" value="${config['search_interval']}" size="8" maxlength="8"> mins
+                    <h5>Post-Processing Interval</h5><input type="text" name="scan_interval" value="${config['scan_interval']}" size="8" maxlength="8"> mins
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <p class="center"><input type="submit" value="Save changes"><br></p>
 </form>
 
 </%def>

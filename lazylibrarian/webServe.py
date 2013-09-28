@@ -119,13 +119,15 @@ class WebInterface(object):
                     "use_newzbin" :     checked(lazylibrarian.NEWZBIN),
                     "newzbin_uid" :     lazylibrarian.NEWZBIN_UID,
                     "newzbin_pass" :    lazylibrarian.NEWZBIN_PASS,
+                    "search_interval" :    int(lazylibrarian.SEARCH_INTERVAL),
+                    "scan_interval" :    int(lazylibrarian.SCAN_INTERVAL),
                 }
         return serve_template(templatename="config.html", title="Settings", config=config)    
     config.exposed = True
 
     def configUpdate(self, http_host='0.0.0.0', http_user=None, http_port=5299, http_pass=None, http_look=None, launch_browser=0, logdir=None, imp_onlyisbn=0, imp_preflang=None,
         sab_host=None, sab_port=None, sab_api=None, sab_user=None, sab_pass=None, destination_copy=0, destination_dir=None, download_dir=None, sab_cat=None, usenet_retention=None, blackhole=0, blackholedir=None,
-        nzbmatrix=0, nzbmatrix_user=None, nzbmatrix_api=None, newznab=0, newznab_host=None, newznab_api=None, newzbin=0, newzbin_uid=None, newzbin_pass=None):
+        nzbmatrix=0, nzbmatrix_user=None, nzbmatrix_api=None, newznab=0, newznab_host=None, newznab_api=None, newzbin=0, newzbin_uid=None, newzbin_pass=None, search_interval=None, scan_interval=None):
 
         lazylibrarian.HTTP_HOST = http_host
         lazylibrarian.HTTP_PORT = http_port
@@ -163,6 +165,9 @@ class WebInterface(object):
         lazylibrarian.NEWZBIN = newzbin
         lazylibrarian.NEWZBIN_UID = newzbin_uid
         lazylibrarian.NEWZBIN_PASS = newzbin_pass
+
+        lazylibrarian.SEARCH_INTERVAL = search_interval
+        lazylibrarian.SCAN_INTERVAL = scan_interval
 
         lazylibrarian.config_write()
 
