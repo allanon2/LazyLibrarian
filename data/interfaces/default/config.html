@@ -158,8 +158,26 @@
         <table class="configtable" summary="Search&Processing">
             <tr>
                 <td>
-                    <h5>NZB Scan Interval:</h5><input type="text" name="search_interval" value="${config['search_interval']}" size="8" maxlength="8"> mins
-                    <h5>Post-Processing Interval</h5><input type="text" name="scan_interval" value="${config['scan_interval']}" size="8" maxlength="8"> mins
+                    <h5>NZB Scan Interval:</h5><input type="text" name="search_interval" value="${config['search_interval']}" size="8" maxlength="40"> mins
+                    <h5>Post-Processing Interval</h5><input type="text" name="scan_interval" value="${config['scan_interval']}" size="8" maxlength="40"> mins
+                </td>
+                <td>
+                    <h5>eBook Destination Folder:</h5><input type="text" name="ebook_dest_folder" value="${config['ebook_dest_folder']}" size="30" maxlength="40">
+                    <h5>eBook Destination File:</h5><input type="text" name="ebook_dest_file" value="${config['ebook_dest_file']}" size="30" maxlength="40">
+                    <BR>
+                    <small>Options include $Author, $Title, any string
+                    <BR>
+                    Current limitation: each file has to be in unique subfolder
+                    </small>
+                </td>
+                <td>
+                    <h5>Magazine Destination Folder:</h5><input type="text" name="mag_dest_folder" value="${config['mag_dest_folder']}" size="30" maxlength="40">
+                    <h5>Magazine Destination File:</h5><input type="text" name="mag_dest_file" value="${config['mag_dest_file']}" size="30" maxlength="40">
+                    <BR>
+                    <small>Options include $Title, $IssueDate, any string
+                    <BR>
+                    Current limitation: each file has to be in unique subfolder
+                    </small>
                 </td>
             </tr>
         </table>

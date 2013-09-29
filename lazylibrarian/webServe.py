@@ -121,13 +121,18 @@ class WebInterface(object):
                     "newzbin_pass" :    lazylibrarian.NEWZBIN_PASS,
                     "search_interval" :    int(lazylibrarian.SEARCH_INTERVAL),
                     "scan_interval" :    int(lazylibrarian.SCAN_INTERVAL),
+                    "ebook_dest_folder": lazylibrarian.EBOOK_DEST_FOLDER,
+                    "ebook_dest_file": lazylibrarian.EBOOK_DEST_FILE,
+                    "mag_dest_folder": lazylibrarian.MAG_DEST_FOLDER,
+                    "mag_dest_file": lazylibrarian.MAG_DEST_FILE
                 }
         return serve_template(templatename="config.html", title="Settings", config=config)    
     config.exposed = True
 
     def configUpdate(self, http_host='0.0.0.0', http_user=None, http_port=5299, http_pass=None, http_look=None, launch_browser=0, logdir=None, imp_onlyisbn=0, imp_preflang=None,
         sab_host=None, sab_port=None, sab_api=None, sab_user=None, sab_pass=None, destination_copy=0, destination_dir=None, download_dir=None, sab_cat=None, usenet_retention=None, blackhole=0, blackholedir=None,
-        nzbmatrix=0, nzbmatrix_user=None, nzbmatrix_api=None, newznab=0, newznab_host=None, newznab_api=None, newzbin=0, newzbin_uid=None, newzbin_pass=None, search_interval=None, scan_interval=None):
+        nzbmatrix=0, nzbmatrix_user=None, nzbmatrix_api=None, newznab=0, newznab_host=None, newznab_api=None, newzbin=0, newzbin_uid=None, newzbin_pass=None, search_interval=None, scan_interval=None,
+        ebook_dest_folder=None, ebook_dest_file=None, mag_dest_folder=None, mag_dest_file=None):
 
         lazylibrarian.HTTP_HOST = http_host
         lazylibrarian.HTTP_PORT = http_port
@@ -168,6 +173,11 @@ class WebInterface(object):
 
         lazylibrarian.SEARCH_INTERVAL = search_interval
         lazylibrarian.SCAN_INTERVAL = scan_interval
+
+        lazylibrarian.EBOOK_DEST_FOLDER = ebook_dest_folder
+        lazylibrarian.EBOOK_DEST_FILE = ebook_dest_file
+        lazylibrarian.MAG_DEST_FOLDER = mag_dest_folder
+        lazylibrarian.MAG_DEST_FILE = mag_dest_file
 
         lazylibrarian.config_write()
 

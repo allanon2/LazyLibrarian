@@ -79,6 +79,11 @@ NEWZBIN_PASSWORD = None
 SEARCH_INTERVAL = 360
 SCAN_INTERVAL = 10
 
+EBOOK_DEST_FOLDER = '$Author/$Title'
+EBOOK_DEST_FILE = '$Title - $Author'
+MAG_DEST_FOLDER = '_Magazines/$Title/$IssueDate'
+MAG_DEST_FILE = '$IssueDate - $Title'
+
 def CheckSection(sec):
     """ Check if INI section exists, if not create it """
     try:
@@ -162,7 +167,8 @@ def initialize():
 
         global __INITIALIZED__, FULL_PATH, PROG_DIR, LOGLEVEL, DAEMON, DATADIR, CONFIGFILE, CFG, LOGDIR, HTTP_HOST, HTTP_PORT, HTTP_USER, HTTP_PASS, HTTP_ROOT, HTTP_LOOK, LAUNCH_BROWSER, LOGDIR, CACHEDIR, \
             IMP_ONLYISBN, IMP_PREFLANG, SAB_HOST, SAB_PORT, SAB_API, SAB_USER, SAB_PASS, DESTINATION_DIR, DESTINATION_COPY, DOWNLOAD_DIR, SAB_CAT, USENET_RETENTION, BLACKHOLE, BLACKHOLEDIR, GR_API, \
-            NZBMATRIX, NZBMATRIX_USER, NZBMATRIX_API, NEWZNAB, NEWZNAB_HOST, NEWZNAB_API, NEWZBIN, NEWZBIN_UID, NEWZBIN_PASS, SEARCH_INTERVAL, SCAN_INTERVAL
+            NZBMATRIX, NZBMATRIX_USER, NZBMATRIX_API, NEWZNAB, NEWZNAB_HOST, NEWZNAB_API, NEWZBIN, NEWZBIN_UID, NEWZBIN_PASS, SEARCH_INTERVAL, SCAN_INTERVAL, EBOOK_DEST_FOLDER, EBOOK_DEST_FILE, \
+            MAG_DEST_FOLDER, MAG_DEST_FILE
 
         if __INITIALIZED__:
             return False
@@ -219,6 +225,12 @@ def initialize():
 
         SEARCH_INTERVAL = int(check_setting_str(CFG, 'SearchScan', 'search_interval', '360'))
         SCAN_INTERVAL = int(check_setting_str(CFG, 'SearchScan', 'scan_interval', '10'))
+
+        EBOOK_DEST_FOLDER = check_setting_str(CFG, 'PostProcess', 'ebook_dest_folder', '$Author/$Title')
+        EBOOK_DEST_FILE = check_setting_str(CFG, 'PostProcess', 'ebook_dest_file', '$Title - $Author')
+        MAG_DEST_FOLDER = check_setting_str(CFG, 'PostProcess', 'mag_dest_folder', '_Magazines/$Title/$IssueDate')
+        MAG_DEST_FILE = check_setting_str(CFG, 'PostProcess', 'mag_dest_file', '$IssueDate - $Title')
+
 
         if not LOGDIR:
             LOGDIR = os.path.join(DATADIR, 'Logs')
@@ -348,6 +360,12 @@ def config_write():
     new_config['SearchScan'] = {}
     new_config['SearchScan']['search_interval'] = SEARCH_INTERVAL
     new_config['SearchScan']['scan_interval'] = SCAN_INTERVAL
+
+    new_config['PostProcess'] = {}
+    new_config['PostProcess']['ebook_dest_folder'] = EBOOK_DEST_FOLDER
+    new_config['PostProcess']['ebook_dest_file'] = EBOOK_DEST_FILE
+    new_config['PostProcess']['mag_dest_folder'] = MAG_DEST_FOLDER
+    new_config['PostProcess']['mag_dest_file'] = MAG_DEST_FILE
 
     new_config.write()
 

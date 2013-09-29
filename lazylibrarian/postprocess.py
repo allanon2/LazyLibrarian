@@ -43,8 +43,10 @@ def processDir():
                         bookpub = metadata['BookPub']
 
                     #Default destination path, should be allowed change per config file.
-                    dest_path = authorname+'/'+bookname
-                    global_name = bookname + ' - ' + authorname
+                    dest_path = lazylibrarian.EBOOK_DEST_FOLDER.replace('$Author', authorname).replace('$Title', bookname)
+                    #dest_path = authorname+'/'+bookname
+                    global_name = lazylibrarian.EBOOK_DEST_FILE.replace('$Author', authorname).replace('$Title', bookname)
+                    #global_name = bookname + ' - ' + authorname
                 else:
                     data = myDB.select("SELECT * from magazines WHERE Title='%s'" % book['BookID'])
                     for metadata in data:
@@ -52,10 +54,12 @@ def processDir():
                     #AuxInfo was added for magazine release date, normally housed in 'magazines' but if multiple
                     #files are downloading, there will be an error in post-processing, trying to go to the 
                     #same directory.
-                    dest_path = '_Magazines/'+title+'/'+book['AuxInfo']
+                    dest_path = lazylibrarian.MAG_DEST_FOLDER.replace('$IssueDate', book['AuxInfo']).replace('$Title', title)
+                    #dest_path = '_Magazines/'+title+'/'+book['AuxInfo']
                     authorname = None
                     bookname = None
-                    global_name = book['AuxInfo']+' - '+title
+                    global_name = lazylibrarian.MAG_DEST_FILE.replace('$IssueDate', book['AuxInfo']).replace('$Title', title)
+                    #global_name = book['AuxInfo']+' - '+title
                
                 dic = {'<':'', '>':'', '=':'', '?':'', '"':'', ',':'', '*':'', ':':'', ';':''}
                 dest_path = formatter.latinToAscii(formatter.replace_all(dest_path, dic))
