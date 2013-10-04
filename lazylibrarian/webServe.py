@@ -9,6 +9,7 @@ import threading, time
 import lazylibrarian
 
 from lazylibrarian import logger, importer, database, postprocess, formatter
+from lazylibrarian import notifiers
 from lazylibrarian.searchnzb import searchbook
 from lazylibrarian.formatter import checked
 from lazylibrarian.gr import GoodReads
@@ -124,7 +125,13 @@ class WebInterface(object):
                     "ebook_dest_folder": lazylibrarian.EBOOK_DEST_FOLDER,
                     "ebook_dest_file": lazylibrarian.EBOOK_DEST_FILE,
                     "mag_dest_folder": lazylibrarian.MAG_DEST_FOLDER,
-                    "mag_dest_file": lazylibrarian.MAG_DEST_FILE
+                    "mag_dest_file": lazylibrarian.MAG_DEST_FILE,
+                    "use_twitter" :     lazylibrarian.USE_TWITTER,
+                    "twitter_notify_onsnatch" :     lazylibrarian.TWITTER_NOTIFY_ONSNATCH,
+                    "twitter_notify_ondownload" :     lazylibrarian.TWITTER_NOTIFY_ONDOWNLOAD,
+                    "twitter_username" :     lazylibrarian.TWITTER_USERNAME,
+                    "twitter_password" :     lazylibrarian.TWITTER_PASSWORD,
+                    "twitter_prefix" :     lazylibrarian.TWITTER_PREFIX
                 }
         return serve_template(templatename="config.html", title="Settings", config=config)    
     config.exposed = True
@@ -132,7 +139,23 @@ class WebInterface(object):
     def configUpdate(self, http_host='0.0.0.0', http_user=None, http_port=5299, http_pass=None, http_look=None, launch_browser=0, logdir=None, imp_onlyisbn=0, imp_preflang=None,
         sab_host=None, sab_port=None, sab_api=None, sab_user=None, sab_pass=None, destination_copy=0, destination_dir=None, download_dir=None, sab_cat=None, usenet_retention=None, blackhole=0, blackholedir=None,
         nzbmatrix=0, nzbmatrix_user=None, nzbmatrix_api=None, newznab=0, newznab_host=None, newznab_api=None, newzbin=0, newzbin_uid=None, newzbin_pass=None, search_interval=None, scan_interval=None,
-        ebook_dest_folder=None, ebook_dest_file=None, mag_dest_folder=None, mag_dest_file=None):
+        ebook_dest_folder=None, ebook_dest_file=None, mag_dest_folder=None, mag_dest_file=None, use_twitter=0, twitter_notify_onsnatch=0, twitter_notify_ondownload=0, twitter_username=None, twitter_password=None, 
+        twitter_prefix='LazyLibrarian'):
+
+
+        if twitter_notify_onsnatch == "on":
+            twitter_notify_onsnatch = 1
+        else:
+            twitter_notify_onsnatch = 0
+
+        if twitter_notify_ondownload == "on":
+            twitter_notify_ondownload = 1
+        else:
+            twitter_notify_ondownload = 0
+        if use_twitter == "on":
+            use_twitter = 1
+        else:
+            use_twitter = 0
 
         lazylibrarian.HTTP_HOST = http_host
         lazylibrarian.HTTP_PORT = http_port
@@ -178,6 +201,13 @@ class WebInterface(object):
         lazylibrarian.EBOOK_DEST_FILE = ebook_dest_file
         lazylibrarian.MAG_DEST_FOLDER = mag_dest_folder
         lazylibrarian.MAG_DEST_FILE = mag_dest_file
+
+        lazylibrarian.USE_TWITTER = use_twitter
+        lazylibrarian.TWITTER_NOTIFY_ONSNATCH = twitter_notify_onsnatch
+        lazylibrarian.TWITTER_NOTIFY_ONDOWNLOAD = twitter_notify_ondownload
+        lazylibrarian.TWITTER_USERNAME = twitter_username
+        lazylibrarian.TWITTER_PASSWORD = twitter_password
+        lazylibrarian.TWITTER_PREFIX = twitter_prefix
 
         lazylibrarian.config_write()
 
@@ -418,3 +448,30 @@ class WebInterface(object):
         message = 'reopening ...'
         return serve_template(templatename="shutdown.html", title="Reopen library", message=message, timer=30)
     restart.exposed = True
+
+    @cherrypy.expose
+    def twitterStep1(self):
+        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
+
+        return notifiers.twitter_notifier._get_authorization()
+
+    @cherrypy.expose
+    def twitterStep2(self, key):
+        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
+
+        result = notifiers.twitter_notifier._get_credentials(key)
+        logger.info(u"result: "+str(result))
+        if result:
+            return "Key verification successful"
+        else:
+            return "Unable to verify key"
+
+    @cherrypy.expose
+    def testTwitter(self):
+        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
+
+        result = notifiers.twitter_notifier.test_notify()
+        if result:
+            return "Tweet successful, check your twitter to make sure it worked"
+        else:
+            return "Error sending tweet"

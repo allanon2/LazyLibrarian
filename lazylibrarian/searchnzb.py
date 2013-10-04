@@ -6,6 +6,7 @@ from xml.etree.ElementTree import Element, SubElement
 import lazylibrarian
 
 from lazylibrarian import logger, database, formatter, providers, sabnzbd
+from lazylibrarian import notifiers
 
 def searchbook(books=None):
 
@@ -92,7 +93,7 @@ def searchbook(books=None):
                         frequency = results['Frequency']
                         regex = results['Regex']
 
-                    nzbtitle_formatted = nzb['nzbtitle'].replace('.',' ')
+                    nzbtitle_formatted = nzb['nzbtitle'].replace('.',' ').replace('/',' ').replace('+',' ').replace('_',' ')
                     nzbtitle_exploded = nzbtitle_formatted.split(' ')
                     #IF ANYTHING GOES WRONG IT HAS TO DO WITH NZB TITLE LENGTHS
                     #if len(nzbtitle_exploded) > 1:
@@ -178,7 +179,9 @@ def searchbook(books=None):
                             "Status": "Skipped"
                             }
                         myDB.upsert("wanted", newValueDict, controlValueDict)
-                        snatch = DownloadMethod(bookid, nzbprov, nzbtitle, nzburl)                 
+                        snatch = DownloadMethod(bookid, nzbprov, nzbtitle, nzburl)
+                        title_formatted = nzbtitle.replace('.',' ').replace('/',' ').replace('+',' ').replace('_',' ')
+                        notifiers.notify_snatch(title_formatted+' at '+formatter.now())                 
                 time.sleep(1)
 
 def DownloadMethod(bookid=None, nzbprov=None, nzbtitle=None, nzburl=None):

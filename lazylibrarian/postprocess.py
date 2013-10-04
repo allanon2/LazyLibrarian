@@ -5,6 +5,7 @@ from urllib import FancyURLopener
 import lazylibrarian
 
 from lazylibrarian import database, logger, formatter
+from lazylibrarian import notifiers
 
 def processDir():
     # rename this thread
@@ -129,6 +130,7 @@ def processDir():
                             myDB.upsert("authors", newValueDict, controlValueDict)
 
                     logger.info('Successfully processed: %s' % global_name)
+                    notifiers.notify_download(global_name+' at '+formatter.now())
                 else:
                     logger.info('Postprocessing for %s has failed.' % global_name)
         if ppcount:
