@@ -8,6 +8,10 @@ import lazylibrarian
 from lazylibrarian import logger, database, formatter, providers, sabnzbd
 from lazylibrarian import notifiers
 
+#new to support torrents
+from StringIO import StringIO
+import gzip
+
 def searchbook(books=None):
 
     # rename this thread
@@ -56,7 +60,7 @@ def searchbook(books=None):
     if not lazylibrarian.SAB_HOST and not lazylibrarian.BLACKHOLE:
         logger.info('No downloadmethod is set, use SABnzbd or blackhole')
 
-    if not lazylibrarian.NEWZNAB:
+    if not lazylibrarian.NEWZNAB and not lazylibrarian.KAT and not lazylibrarian.BIBLIOTIK and not lazylibrarian.MYANONAMOUSE:
         logger.info('No providers are set.')
 
     if searchlist == []:
@@ -71,6 +75,18 @@ def searchbook(books=None):
         if lazylibrarian.NZBMATRIX and not resultlist:
             logger.info('Searching NZB at provider NZBMatrix ...')
             resultlist = providers.NZBMatrix(book)
+
+        if lazylibrarian.BIBLIOTIK and not resultlist:
+            logger.info('Searching Torrents at provider Bibliotik ...')
+            resultlist = providers.Bibliotik(book)
+
+        if lazylibrarian.MYANONAMOUSE and not resultlist:
+            logger.info('Searching Torrents at provider MyAnonaMouse ...')
+            resultlist = providers.MyAnonaMouse(book)
+
+        if lazylibrarian.KAT and not resultlist:
+            logger.info('Searching Torrents at provider KAT ...')
+            resultlist = providers.KAT(book)
 
         if not resultlist:
             logger.info("Search didn't have results. Adding book %s to queue." % book['searchterm'])
@@ -193,24 +209,51 @@ def DownloadMethod(bookid=None, nzbprov=None, nzbtitle=None, nzburl=None):
 
     elif lazylibrarian.BLACKHOLE:
 
-        try:
-            nzbfile = urllib2.urlopen(nzburl, timeout=30).read()
+        if nzbprov == 'KAT' or nzbprov == 'Bibliotik' or nzbprov == "MyAnonamouse":
 
-        except urllib2.URLError, e:
-            logger.warn('Error fetching nzb from url: ' + nzburl + ' %s' % e)
+            request = urllib2.Request(nzburl)
+            request.add_header('Accept-encoding', 'gzip')
+    
+            if nzbprov == 'KAT':
+                request.add_header('Referer', 'http://kat.ph/')
+        
+            response = urllib2.urlopen(request)
+            if response.info().get('Content-Encoding') == 'gzip':
+                buf = StringIO(response.read())
+                f = gzip.GzipFile(fileobj=buf)
+                torrent = f.read()
+            else:
+                torrent = response.read()
 
-        nzbname = str.replace(nzbtitle, ' ', '_') + '.nzb'
-        nzbpath = os.path.join(lazylibrarian.BLACKHOLEDIR, nzbname)
+            nzbname = str.replace(str(nzbtitle), ' ', '_') + '.torrent'
+            nzbpath = os.path.join(lazylibrarian.BLACKHOLEDIR, nzbname)
 
-        try:
-            f = open(nzbpath, 'w')
-            f.write(nzbfile)
-            f.close()
-            logger.info('NZB file saved to: ' + nzbpath)
+            torrent_file = open(nzbpath , 'wb')
+            torrent_file.write(torrent)
+            torrent_file.close()
+            logger.info('Torrent file saved: %s' % nzbtitle)
             download = True
-        except Exception, e:
-            logger.error('%s not writable, NZB not saved. Error: %s' % (nzbpath, e))
-            download = False
+        else:
+                
+            
+            try:
+                nzbfile = urllib2.urlopen(nzburl, timeout=30).read()
+
+            except urllib2.URLError, e:
+                logger.warn('Error fetching nzb from url: ' + nzburl + ' %s' % e)
+
+            nzbname = str.replace(nzbtitle, ' ', '_') + '.nzb'
+            nzbpath = os.path.join(lazylibrarian.BLACKHOLEDIR, nzbname)
+
+            try:
+                f = open(nzbpath, 'w')
+                f.write(nzbfile)
+                f.close()
+                logger.info('NZB file saved to: ' + nzbpath)
+                download = True
+            except Exception, e:
+                logger.error('%s not writable, NZB not saved. Error: %s' % (nzbpath, e))
+                download = False
 
     else:
         logger.error('No downloadmethod is enabled, check config.')
@@ -223,8 +266,6 @@ def DownloadMethod(bookid=None, nzbprov=None, nzbtitle=None, nzburl=None):
     else:
         logger.error(u'Failed to download nzb @ <a href="%s">%s</a>' % (nzburl, lazylibrarian.NEWZNAB_HOST))
         myDB.action('UPDATE wanted SET status = "Failed" WHERE NZBurl=?', [nzburl])
-
-
 
 
 

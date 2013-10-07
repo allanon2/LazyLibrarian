@@ -76,6 +76,16 @@ NEWZBIN = False
 NEWZBIN_UID = None
 NEWZBIN_PASSWORD = None
 
+KAT = False
+
+BIBLIOTIK = False
+BIBLIOTIK_USER = None
+BIBLIOTIK_PASS = None
+
+MYANONAMOUSE = False
+MYANONAMOUSE_USER = None
+MYANONAMOUSE_PASS = None
+
 SEARCH_INTERVAL = 360
 SCAN_INTERVAL = 10
 
@@ -175,7 +185,8 @@ def initialize():
         global __INITIALIZED__, FULL_PATH, PROG_DIR, LOGLEVEL, DAEMON, DATADIR, CONFIGFILE, CFG, LOGDIR, HTTP_HOST, HTTP_PORT, HTTP_USER, HTTP_PASS, HTTP_ROOT, HTTP_LOOK, LAUNCH_BROWSER, LOGDIR, CACHEDIR, \
             IMP_ONLYISBN, IMP_PREFLANG, SAB_HOST, SAB_PORT, SAB_API, SAB_USER, SAB_PASS, DESTINATION_DIR, DESTINATION_COPY, DOWNLOAD_DIR, SAB_CAT, USENET_RETENTION, BLACKHOLE, BLACKHOLEDIR, GR_API, \
             NZBMATRIX, NZBMATRIX_USER, NZBMATRIX_API, NEWZNAB, NEWZNAB_HOST, NEWZNAB_API, NEWZBIN, NEWZBIN_UID, NEWZBIN_PASS, SEARCH_INTERVAL, SCAN_INTERVAL, EBOOK_DEST_FOLDER, EBOOK_DEST_FILE, \
-            MAG_DEST_FOLDER, MAG_DEST_FILE, USE_TWITTER, TWITTER_NOTIFY_ONSNATCH, TWITTER_NOTIFY_ONDOWNLOAD, TWITTER_USERNAME, TWITTER_PASSWORD, TWITTER_PREFIX
+            MAG_DEST_FOLDER, MAG_DEST_FILE, USE_TWITTER, TWITTER_NOTIFY_ONSNATCH, TWITTER_NOTIFY_ONDOWNLOAD, TWITTER_USERNAME, TWITTER_PASSWORD, TWITTER_PREFIX, KAT, BIBLIOTIK, BIBLIOTIK_USER, BIBLIOTIK_PASS, \
+            MYANONAMOUSE, MYANONAMOUSE_USER, MYANONAMOUSE_PASS
 
         if __INITIALIZED__:
             return False
@@ -229,6 +240,16 @@ def initialize():
         NEWZBIN = bool(check_setting_int(CFG, 'Newzbin', 'newzbin', 0))
         NEWZBIN_UID = check_setting_str(CFG, 'Newzbin', 'newzbin_uid', '')
         NEWZBIN_PASS = check_setting_str(CFG, 'Newzbin', 'newzbin_pass', '')
+
+        KAT = bool(check_setting_int(CFG, 'KAT', 'kat', 0))
+
+        BIBLIOTIK = bool(check_setting_int(CFG, 'Bibliotik', 'bibliotik', 0))
+        BIBLIOTIK_USER = check_setting_str(CFG, 'Bibliotik', 'bibliotik_user', '')
+        BIBLIOTIK_PASS = check_setting_str(CFG, 'Bibliotik', 'bibliotik_pass', '')
+
+        MYANONAMOUSE = bool(check_setting_int(CFG, 'MyAnonamouse', 'myanonamouse', 0))
+        MYANONAMOUSE_USER = check_setting_str(CFG, 'MyAnonamouse', 'myanonamouse_user', '')
+        MYANONAMOUSE_PASS = check_setting_str(CFG, 'MyAnonamouse', 'myanonamouse_pass', '')
 
         SEARCH_INTERVAL = int(check_setting_str(CFG, 'SearchScan', 'search_interval', '360'))
         SCAN_INTERVAL = int(check_setting_str(CFG, 'SearchScan', 'scan_interval', '10'))
@@ -370,6 +391,19 @@ def config_write():
     new_config['Newzbin']['newzbin'] = int(NEWZBIN)
     new_config['Newzbin']['newzbin_uid'] = NEWZBIN_UID
     new_config['Newzbin']['newzbin_pass'] = NEWZBIN_PASS
+
+    new_config['KAT'] = {}
+    new_config['KAT']['kat'] = int(KAT)
+
+    new_config['Bibliotik'] = {}
+    new_config['Bibliotik']['bibliotik'] = int(BIBLIOTIK)
+    new_config['Bibliotik']['bibliotik_user'] = BIBLIOTIK_USER
+    new_config['Bibliotik']['bibliotik_pass'] = BIBLIOTIK_PASS
+
+    new_config['MyAnonamouse'] = {}
+    new_config['MyAnonamouse']['myanonamouse'] = int(MYANONAMOUSE)
+    new_config['MyAnonamouse']['myanonamouse_user'] = MYANONAMOUSE_USER
+    new_config['MyAnonamouse']['myanonamouse_pass'] = MYANONAMOUSE_PASS
 
     new_config['SearchScan'] = {}
     new_config['SearchScan']['search_interval'] = SEARCH_INTERVAL

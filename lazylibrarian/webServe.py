@@ -120,6 +120,13 @@ class WebInterface(object):
                     "use_newzbin" :     checked(lazylibrarian.NEWZBIN),
                     "newzbin_uid" :     lazylibrarian.NEWZBIN_UID,
                     "newzbin_pass" :    lazylibrarian.NEWZBIN_PASS,
+                    "use_kat" :     checked(lazylibrarian.KAT),
+                    "use_bibliotik" :     checked(lazylibrarian.BIBLIOTIK),
+                    "bibliotik_user" :     lazylibrarian.BIBLIOTIK_USER,
+                    "bibliotik_pass" :    lazylibrarian.BIBLIOTIK_PASS,
+                    "use_myanonamouse" :     checked(lazylibrarian.MYANONAMOUSE),
+                    "myanonamouse_user" :     lazylibrarian.MYANONAMOUSE_USER,
+                    "myanonamouse_pass" :    lazylibrarian.MYANONAMOUSE_PASS,
                     "search_interval" :    int(lazylibrarian.SEARCH_INTERVAL),
                     "scan_interval" :    int(lazylibrarian.SCAN_INTERVAL),
                     "ebook_dest_folder": lazylibrarian.EBOOK_DEST_FOLDER,
@@ -140,7 +147,7 @@ class WebInterface(object):
         sab_host=None, sab_port=None, sab_api=None, sab_user=None, sab_pass=None, destination_copy=0, destination_dir=None, download_dir=None, sab_cat=None, usenet_retention=None, blackhole=0, blackholedir=None,
         nzbmatrix=0, nzbmatrix_user=None, nzbmatrix_api=None, newznab=0, newznab_host=None, newznab_api=None, newzbin=0, newzbin_uid=None, newzbin_pass=None, search_interval=None, scan_interval=None,
         ebook_dest_folder=None, ebook_dest_file=None, mag_dest_folder=None, mag_dest_file=None, use_twitter=0, twitter_notify_onsnatch=0, twitter_notify_ondownload=0, twitter_username=None, twitter_password=None, 
-        twitter_prefix='LazyLibrarian'):
+        twitter_prefix='LazyLibrarian',kat=0, bibliotik=0, bibliotik_user=None, bibliotik_pass=None, myanonamouse=0, myanonamouse_user=None, myanonamouse_pass=None):
 
 
         if twitter_notify_onsnatch == "on":
@@ -193,6 +200,16 @@ class WebInterface(object):
         lazylibrarian.NEWZBIN = newzbin
         lazylibrarian.NEWZBIN_UID = newzbin_uid
         lazylibrarian.NEWZBIN_PASS = newzbin_pass
+
+        lazylibrarian.KAT = kat
+
+        lazylibrarian.BIBLIOTIK = bibliotik
+        lazylibrarian.BIBLIOTIK_USER = bibliotik_user
+        lazylibrarian.BIBLIOTIK__PASS = bibliotik_pass
+
+        lazylibrarian.MYANONAMOUSE = myanonamouse
+        lazylibrarian.MYANONAMOUSE_USER = myanonamouse_user
+        lazylibrarian.MYANONAMOUSE_PASS = myanonamouse_pass
 
         lazylibrarian.SEARCH_INTERVAL = search_interval
         lazylibrarian.SCAN_INTERVAL = scan_interval
