@@ -100,7 +100,11 @@ def searchbook(books=None):
                 nzbdate_temp = nzb['nzbdate']
                 nzbsize_temp = nzb['nzbsize']
                 nzbsize = str(round(float(nzbsize_temp) / 1048576,2))+' MB'
-                nzbdate = formatter.nzbdate2format(nzbdate_temp)
+                # al - not setting torrent date yet, so this will be blank
+                try:
+                    nzbdate = formatter.nzbdate2format(nzbdate_temp)
+                except:
+                    nzbdate = ''
 
                 checkifmag = myDB.select('SELECT * from magazines WHERE Title=?', [bookid])
                 if checkifmag:
