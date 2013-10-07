@@ -237,6 +237,7 @@ def KAT(book=None):
 
 
     provider = "KAT"
+    #providerurl = url_fix("http://proxykat.me/search/" + book['searchterm'])
     providerurl = url_fix("http://www.kat.ph/search/" + book['searchterm'])
 
     params = {   

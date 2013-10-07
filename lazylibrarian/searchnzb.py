@@ -11,6 +11,39 @@ from lazylibrarian import notifiers
 #new to support torrents
 from StringIO import StringIO
 import gzip
+import datetime
+
+def parse_date (title):
+
+    logger.info("Trying to parse [%s]" % title)
+
+    search_strings = [r'(?P<Day>\d+)\s+(?P<Month>January|February|March|April|May|June|July|August|September|October|November|December)\s+(?P<Year>\d{4})', \
+                      r'\s(?P<Month>January|February|March|April|May|June|July|August|September|October|November|December)\s+(?P<Day>\d+)\s+(?P<Year>\d{4})', \
+                      r'\s(?P<Month>January|February|March|April|May|June|July|August|September|October|November|December)\s+(?P<Year>\d{4})']
+
+    Year = ''
+    Day = ''
+    Month = ''
+    for regex in search_strings:
+        match = re.search(regex, title)
+        if match:
+            Year = match.group('Year')
+            Month = match.group('Month')
+            try:
+                Day = match.group('Day')
+            except:
+                Day = '01'
+                
+            print "MATCHED " + Day + " " + Month + " " + Year
+            break
+
+
+    if Year == '':
+        print "NO MATCH"
+        
+    return (Year, Month, Day)
+        
+
 
 def searchbook(books=None):
 
@@ -92,6 +125,7 @@ def searchbook(books=None):
             logger.info("Search didn't have results. Adding book %s to queue." % book['searchterm'])
 
         else:
+            
             for nzb in resultlist:
                 bookid = nzb['bookid']
                 nzbtitle = nzb['nzbtitle']
@@ -113,34 +147,18 @@ def searchbook(books=None):
                         frequency = results['Frequency']
                         regex = results['Regex']
 
-                    nzbtitle_formatted = nzb['nzbtitle'].replace('.',' ').replace('/',' ').replace('+',' ').replace('_',' ')
+                    nzbtitle_formatted = nzb['nzbtitle'].replace('.',' ').replace('/',' ').replace('+',' ').replace('_',' ').replace('-',' ').replace('(',' ').replace(')',' ').replace('.',' ')
                     nzbtitle_exploded = nzbtitle_formatted.split(' ')
-                    #IF ANYTHING GOES WRONG IT HAS TO DO WITH NZB TITLE LENGTHS
-                    #if len(nzbtitle_exploded) > 1:
-                    #regexA = DD MonthName YYYY
-                    regexA_year = nzbtitle_exploded[len(nzbtitle_exploded)-1]
-                    regexA_month_temp = nzbtitle_exploded[len(nzbtitle_exploded)-2]
+                    logger.info(nzbtitle_formatted)
+
+                    (regexA_year, regexA_month_temp, regexA_day) = parse_date (nzbtitle_formatted)
                     regexA_month = formatter.month2num(regexA_month_temp)
-                    #regexB = YYYY-MM
-                    #regexB_last = nzbtitle_exploded[len(nzbtitle_exploded)-1]
-                    #regexB_exploded = regexB_last.split('-')
-                    #regexB_year = regexB_exploded[0]
-                    #regexB_month = regexB_exploded[1].zfill(2)
-                    #regexC = MonthName DD YYYY
-                    #regexC_year = nzbtitle_exploded[len(nzbtitle_exploded)-1]
-                    #regexC_month_temp = nzbtitle_exploded[len(nzbtitle_exploded)-3]
-                    #regexC_month = formatter.month2num(regexA_month_temp)
-
-                    if frequency == "Weekly" or frequency == "BiWeekly":
-                        regexA_day = nzbtitle_exploded[len(nzbtitle_exploded)-3].zfill(2)
-                        #regexC_day = nzbtitle_exploded[len(nzbtitle_exploded)-2].zfill(2)
-                    else:
+                    
+                    if frequency != "Weekly" and frequency != "BiWeekly":
                         regexA_day = '01'
-                        #regexB_day = '01'
 
+                    logger.info('Year = %s, Month = %s, Day = %s' % (regexA_year, regexA_month, regexA_day))
                     newdatish_regexA = regexA_year+regexA_month+regexA_day
-                    #newdatish_regexB = regexB_year+regexB_month+regexB_day
-                    #newdatish_regexC = regexC_year+regexC_month+regexC_day
 
                     try:
                         int(newdatish_regexA)
@@ -157,7 +175,7 @@ def searchbook(books=None):
                             status = results['Status']
                     else:
                         status = "Skipped"
-                    if keyword_check != nzbtitle_formatted:
+                    if keyword_check == nzbtitle_formatted:
                         newdatish = regexA_year+'-'+regexA_month+'-'+regexA_day
                         controlValueDict = {"NZBurl": nzburl}
                         newValueDict = {
@@ -170,8 +188,6 @@ def searchbook(books=None):
                             "NZBsize": nzbsize
                             }
                         myDB.upsert("wanted", newValueDict, controlValueDict)
-                        print nzbtitle_formatted
-                        print newdatish
 
                         if control_date is None:
                             myDB.upsert("magazines", {"LastAcquired": nzbdate, "IssueDate": newdatish}, {"Title": bookid})
@@ -185,6 +201,7 @@ def searchbook(books=None):
                                 logger.info('This issue of %s is old; skipping.' % nzbtitle_formatted)
                     else:
                         logger.info('NZB %s does not completely match search term %s.' % (nzbtitle, bookid))
+                        logger.info('Compared [%s] to [%s]' % (keyword_check, nzbtitle_formatted))
                        
                 else:
                     snatchedbooks = myDB.action('SELECT * from books WHERE BookID=? and Status="Snatched"', [bookid]).fetchone()
@@ -202,7 +219,9 @@ def searchbook(books=None):
                         snatch = DownloadMethod(bookid, nzbprov, nzbtitle, nzburl)
                         title_formatted = nzbtitle.replace('.',' ').replace('/',' ').replace('+',' ').replace('_',' ')
                         notifiers.notify_snatch(title_formatted+' at '+formatter.now())                 
+
                 time.sleep(1)
+
 
 def DownloadMethod(bookid=None, nzbprov=None, nzbtitle=None, nzburl=None):
 
