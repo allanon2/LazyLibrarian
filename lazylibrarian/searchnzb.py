@@ -18,6 +18,7 @@ def parse_date (title):
     logger.info("Trying to parse [%s]" % title)
 
     search_strings = [r'(?P<Day>\d+)\s+(?P<Month>January|February|March|April|May|June|July|August|September|October|November|December)\s+(?P<Year>\d{4})', \
+                      r'(?P<Day>\d+)(st|nd|rd|th)\s+(?P<Month>January|February|March|April|May|June|July|August|September|October|November|December)\s+(?P<Year>\d{4})', \
                       r'\s(?P<Month>January|February|March|April|May|June|July|August|September|October|November|December)\s+(?P<Day>\d+)\s+(?P<Year>\d{4})', \
                       r'\s(?P<Month>January|February|March|April|May|June|July|August|September|October|November|December)\s+(?P<Year>\d{4})']
 
@@ -108,14 +109,6 @@ def searchbook(books=None):
         if lazylibrarian.NZBMATRIX and not resultlist:
             logger.info('Searching NZB at provider NZBMatrix ...')
             resultlist = providers.NZBMatrix(book)
-
-        if lazylibrarian.BIBLIOTIK and not resultlist:
-            logger.info('Searching Torrents at provider Bibliotik ...')
-            resultlist = providers.Bibliotik(book)
-
-        if lazylibrarian.MYANONAMOUSE and not resultlist:
-            logger.info('Searching Torrents at provider MyAnonaMouse ...')
-            resultlist = providers.MyAnonaMouse(book)
 
         if lazylibrarian.KAT and not resultlist:
             logger.info('Searching Torrents at provider KAT ...')
